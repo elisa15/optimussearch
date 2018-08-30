@@ -1,0 +1,55 @@
+<?php
+/*
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Headers: access");
+header("Access-Control-Allow-Methods: GET");
+header("Access-Control-Allow-Credentials: true");
+header('Content-Type: application/json');
+*/
+
+// include database and object files
+include_once '../config/database.php';
+include_once '../objects/system_user.php';
+ 
+// get database connection
+$database = new Database();
+$db = $database->getConnection();
+ 
+// prepare system-user object
+$system_user = new System_User($db);
+
+// set ID property of system-user to be edited
+$system_user->username = isset($_POST['username']) ? $_POST['username'] : die();
+$system_user->password = isset($_POST['password']) ? $_POST['password'] : die();
+
+// check if system-user exists
+$system_user->get_user_account();
+ 
+    try{
+        if(!is_null($system_user->user_id)){
+        	if($system_user->account_status==1){
+				// create array
+				$system_user_arr = array(
+				    "user_id" =>  $system_user->user_id,
+				    "full_name" => $system_user->full_name,
+				    "username" => $system_user->username,
+                    "profile_picture" => $system_user->profile_picture,
+				    "message"=>"Logging in...",
+				    "flag"=>true
+				);
+			}elseif($system_user->account_status==0){
+				throw new Exception("Suspended account. <br>Please contact your administrator.");
+			}
+        }else{
+            throw new Exception("No credentials found");
+        }
+    }catch (Exception $v){
+        $message = $v->getMessage();
+		$system_user_arr = array(
+		    "message"=>$message,
+		    "flag"=>false
+		);
+    }
+	// make it json format
+	print_r(json_encode($system_user_arr));
+?>
